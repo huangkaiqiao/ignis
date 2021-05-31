@@ -11,3 +11,7 @@ edit:
 
 run: edit
 	./build/main.o
+
+test:
+	$(CXX) src/test.cc -o build/test.o $(CPPFLAGS) $(CXXFLAGS)
+	./build/test.o
