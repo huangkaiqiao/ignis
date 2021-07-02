@@ -4,6 +4,7 @@
 #include "spdlog/spdlog.h"
 
 using std::string; using std::hex;
+std::stringstream ss;
 
 int factorial(int number) { return number <= 1 ? number : factorial(number - 1) * number; }
 
@@ -64,6 +65,7 @@ std::string StringToHex(string s)
 {
     const unsigned char* pData = (unsigned char *)s.data();
     int nSize = s.size();
+    // spdlog::info("StringToHex: nSize={}", nSize);
     std::string str;
     char szBuf[3] = "";
     for(size_t i = 0;i<nSize;i++)
@@ -74,14 +76,22 @@ std::string StringToHex(string s)
     return str;
 }
 
-//Pre-processing (Padding): 预处理
-// std::string preProcessing(std::string message) {
-//     std::string padded = message.append('\x80');
-//     int len = padded.size();
-//     int tmp = (len + 8) % 64;
-//     tmp = tmp == 0? 56:tmp;
-//     padded.append('\00', tmp)
-//     unsigned long msgLen = message.size();
-//     padded.append(std::to_string(msgLen));
-//     return padded
-// }
+// Pre-processing (Padding): 预处理
+std::string preProcessing(std::string message) {
+    unsigned long msgLen = message.size();
+    // spdlog::info("preProcessing: msgLen={}", msgLen);
+    std::string padded = message + '\x80';
+    int len = padded.size();
+    int tmp = len % 64;
+    tmp = tmp == 0? 64:64-tmp;
+    spdlog::info("preProcessing: message={} tmp={}", message, tmp);
+    padded.append(tmp, '\x00');
+    unsigned char arr[2];
+    arr[0] = (msgLen >> 8) & 0xFF; // 0x56
+    arr[1] = msgLen & 0xFF; // 0x78
+    ss.str("");
+    ss << padded;
+    // ss << (unsigned char*)&msgLen;
+    ss << arr;
+    return ss.str();
+}
