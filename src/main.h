@@ -16,6 +16,22 @@ typedef unsigned u32;
 
 int factorial(int number) { return number <= 1 ? number : factorial(number - 1) * number; }
 
+string rand_str(const int len)  /*参数为字符串的长度*/
+{
+    /*初始化*/
+    string str;                 /*声明用来保存随机字符串的str*/
+    char c;                     /*声明字符c，用来保存随机生成的字符*/
+    int idx;                    /*用来循环的变量*/
+    /*循环向字符串中添加随机生成的字符*/
+    for(idx = 0;idx < len;idx ++)
+    {
+        /*rand()%26是取余，余数为0~25加上'a',就是字母a~z,详见asc码表*/
+        c = 'a' + rand()%26;
+        str.push_back(c);       /*push_back()是string类尾插函数。这里插入随机字符c*/
+    }
+    return str;                 /*返回生成的随机字符串*/
+}
+
 // hex array to string
 // std::string HexToString(const unsigned char* data,int len)
 std::string HexToString(string h)
@@ -50,8 +66,12 @@ std::string StringToHex(string s)
     return str;
 }
 
+/**
+ * num 表示消息的字节长度
+*/
 string Uint64ToString(uint64_t num) {
     // unsigned char arr[8];
+    num = num*8;
     stringstream ss;
     // ss.str("");
     ss << (unsigned char)((num >> 56) & 0xFF); 
@@ -93,16 +113,13 @@ void SplitString(const std::string& s, std::vector<std::string>& v, const std::s
 // Pre-processing (Padding): 预处理
 std::string PreProcessing(std::string message) {
     unsigned long long msgLen = message.size();
-    // spdlog::info("preProcessing: msgLen={}", msgLen);
     std::string padded = message + '\x80';
     int len = padded.size() + 8;
     int tmp = len % 64;
     tmp = tmp == 0? 64:64-tmp;
-    // spdlog::info("PreProcessing: message={} tmp={}", message, tmp);
     padded.append(tmp, '\x00');
     SS.str("");
     SS << padded;
-    // ss << (unsigned char*)&msgLen;
     SS << Uint64ToString(msgLen);
     return SS.str();
 }
@@ -138,8 +155,6 @@ vector<string> DivideString(string s, int part_size) {
 void copyByte64ToU32Arr(string chunk, u32* pW) {
     const unsigned char* data = (unsigned char *)chunk.data();
     for(int i=0; i<16; i++){
-        // *pW = 0;
-        // memcpy(pW+i, data+i*8, 8); 
         *(pW+i) = u32(
             (u8)*(data+i*4) << 24 |
             (u8)*(data+i*4+1) << 16 |
@@ -147,10 +162,10 @@ void copyByte64ToU32Arr(string chunk, u32* pW) {
             (u8)*(data+i*4+3)
         );
     }
-    spdlog::info("copy: chunk={}", StringToHex(chunk));
-    for(int i=0; i<16; i++){
-        spdlog::info("copy: w[{}]={}", i, *(pW+i));
-    }
+    // spdlog::info("copy: chunk={}", StringToHex(chunk));
+    // for(int i=0; i<16; i++){
+    //     spdlog::info("copy: w[{}]={}", i, *(pW+i));
+    // }
 }
 
 /*循环左移*/
@@ -167,18 +182,6 @@ unsigned ror(unsigned val, int size)
   unsigned res = val >> size;
   res |= val << (32 - size);
   return res;
-}
-
-u32 sum_mod32(u32 cnt, ...) {
-    u32 sum = 0;
-    va_list ap;
-    va_start(ap, cnt);
-    for (int i = 0; i < cnt; ++i) {
-        sum += va_arg(ap, u32);
-        sum = sum & 0xffffffff;
-    }
-    va_end(ap);
-    return sum;
 }
 
 string SHA256(string message) {
@@ -210,13 +213,11 @@ string SHA256(string message) {
         uint32 w[64];
         string chunk = *it;
         copyByte64ToU32Arr(chunk, w);
-        spdlog::info("copyByte64ToU32Arr: {}, {:x}", w[0], w[0]);
         // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array:
         for (int i=16; i<64; i++) {
             uint32 s0 = ror(w[i-15],  7) ^ ror(w[i-15], 18) ^ (w[i-15] >> 3);
             uint32 s1 = ror(w[i- 2], 17) ^ ror(w[i- 2], 19) ^ (w[i-2] >> 10);
             w[i] = w[i-16] + s0 + w[i-7] + s1;
-            // w[i] = sum_mod32(4, w[i-16], s0, w[i-7], s1);
         }
 
         // Initialize working variables to current hash value:
@@ -231,39 +232,34 @@ string SHA256(string message) {
 
         // Compression function main loop:
         for(int i=0; i<64; i++){
-            spdlog::info("SHA256: a={:x}", a);
+            // spdlog::info("SHA256: a={:x}", a);
             u32 S1 = ror(e, 6) ^ ror(e, 11) ^ ror(e, 25);
             u32 ch = (e & f) ^ ((~ e) & g);
-            // u32 temp1 = h + S1 + ch + k[i] + w[i];
-            spdlog::info("t1: {:x} {:x} {:x} w[{}]:{:x} {:x}", S1, ch, h, i, w[i], k[i]);
-            u32 temp1 = sum_mod32(5, h, S1, ch, k[i], w[i]);
+            u32 temp1 = h + S1 + ch + k[i] + w[i];
             u32 S0 = ror(a, 2) ^ ror(a, 13) ^ ror(a, 22);
             u32 maj = (a & b) ^ (a & c) ^ (b & c);
-            // u32 temp2 = S0 + maj;
-            u32 temp2 = sum_mod32(2, S0, maj);
+            u32 temp2 = S0 + maj;
     
             h = g;
             g = f;
             f = e;
-            // e = d + temp1;
-            e = sum_mod32(2, d, temp1);
+            e = d + temp1;
             d = c;
             c = b;
             b = a;
-            // a = temp1 + temp2;
-            a = sum_mod32(2, temp1, temp2);
-            spdlog::info("SHA256: temp1={:x}, temp2={:x}", temp1, temp2);
+            a = temp1 + temp2;
+            // spdlog::info("SHA256: temp1={:x}, temp2={:x}", temp1, temp2);
         }
 
         // Add the compressed chunk to the current hash value:
-        h0 = sum_mod32(2, h0, a);
-        h1 = sum_mod32(2, h1, b);
-        h2 = sum_mod32(2, h2, c);
-        h3 = sum_mod32(2, h3, d);
-        h4 = sum_mod32(2, h4, e);
-        h5 = sum_mod32(2, h5, f);
-        h6 = sum_mod32(2, h6, g);
-        h7 = sum_mod32(2, h7, h);
+        h0 = h0 + a;
+        h1 = h1 + b;
+        h2 = h2 + c;
+        h3 = h3 + d;
+        h4 = h4 + e;
+        h5 = h5 + f;
+        h6 = h6 + g;
+        h7 = h7 + h;
 
         it++;
     }

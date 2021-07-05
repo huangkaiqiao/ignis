@@ -18,11 +18,11 @@ TEST_CASE("testing string to hex") {
 }
 
 TEST_CASE("testing uint to string") {
-    CHECK(StringToHex(Uint64ToString(0ULL))                    == "0000000000000000");
-    CHECK(StringToHex(Uint64ToString(1024ULL))                 == "0000000000000400");
-    CHECK(StringToHex(Uint64ToString(2147483647ULL))           == "000000007fffffff");
-    CHECK(StringToHex(Uint64ToString(4294967295ULL))           == "00000000ffffffff");
-    CHECK(StringToHex(Uint64ToString(18446744073709551615ULL)) == "ffffffffffffffff");
+    CHECK(StringToHex(Uint64ToString(0ULL))                 == "0000000000000000");
+    CHECK(StringToHex(Uint64ToString(1024ULL))              == "0000000000002000");
+    CHECK(StringToHex(Uint64ToString(2147483647ULL))        == "00000003fffffff8");
+    CHECK(StringToHex(Uint64ToString(4294967295ULL))        == "00000007fffffff8");
+    CHECK(StringToHex(Uint64ToString(2305843009213693951ULL)) == "fffffffffffffff8");
 }
 
 TEST_CASE("testing devide string") {
@@ -33,9 +33,9 @@ TEST_CASE("testing devide string") {
 
 TEST_CASE("testing pre processing") {
     CHECK(StringToHex(PreProcessing(""))           == "80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-    CHECK(StringToHex(PreProcessing(" "))          == "20800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001");
-    CHECK(StringToHex(PreProcessing("123456"))     == "31323334353680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006");
-    CHECK(StringToHex(PreProcessing("BlockChain")) == "426c6f636b436861696e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a");
+    CHECK(StringToHex(PreProcessing(" "))          == "20800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008");
+    CHECK(StringToHex(PreProcessing("123456"))     == "31323334353680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030");
+    CHECK(StringToHex(PreProcessing("BlockChain")) == "426c6f636b436861696e800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000050");
 }
 
 TEST_CASE("testing copy char* to int") {
@@ -49,8 +49,18 @@ TEST_CASE("testing copy char* to int") {
 
 TEST_CASE("testing the sha256 function") {
     CHECK(StringToHex(SHA256("")) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-    // CHECK(StringToHex(SHA256(" ")) == "36a9e7f1c95b82ffb99743e0c5c4ce95d83c9a430aac59f84ef3cbfab6145068");
-    // CHECK(StringToHex(SHA256("123456")) == "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92");
-    // CHECK(StringToHex(SHA256("BlockChain")) == "3a6fed5fc11392b3ee9f81caf017b48640d7458766a8eb0382899a605b41f2b9");
-    // CHECK(StringToHex(SHA256("从而排解心情，丰富自身精神面貌")) == "ad33913bd36726df41f5a14cf7a1d1ef4c6961071b5b30aed1d4c436c2b77c08");
+    CHECK(StringToHex(SHA256(" ")) == "36a9e7f1c95b82ffb99743e0c5c4ce95d83c9a430aac59f84ef3cbfab6145068");
+    CHECK(StringToHex(SHA256("123456")) == "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92");
+    CHECK(StringToHex(SHA256("BlockChain")) == "3a6fed5fc11392b3ee9f81caf017b48640d7458766a8eb0382899a605b41f2b9");
+    CHECK(StringToHex(SHA256("从而排解心情，丰富自身精神面貌")) == "ad33913bd36726df41f5a14cf7a1d1ef4c6961071b5b30aed1d4c436c2b77c08");
 }
+
+// TEST_CASE("testing time cost") {
+//     time_t start = time(0);
+//     for(int i=0; i<1000000; i++) {
+//         string s = rand_str(2);
+//         SHA256(s);
+//     }
+//     time_t end = time(0);
+//     spdlog::info("1000000 次 SHA256 耗时 {} 秒", end - start);
+// }
