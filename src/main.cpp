@@ -3,9 +3,10 @@
 #include <string>
 
 void load_levels_example();
-
 #include "spdlog/spdlog.h"
 #include "spdlog/cfg/env.h" // support for loading levels from the environment variable
+
+#include "rsa.h"
 
 int main()
 {
@@ -13,6 +14,7 @@ int main()
     load_levels_example();
 
     spdlog::info("Welcome to spdlog version {}.{}.{}  !", SPDLOG_VER_MAJOR, SPDLOG_VER_MINOR, SPDLOG_VER_PATCH);
+    testRsa();
     return 0;
 }
 

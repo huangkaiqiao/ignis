@@ -253,17 +253,7 @@ string SHA256(string message) {
 
         // Add the compressed chunk to the current hash value:
         h0 = h0 + a;
-        h1 = h1 + b;
-        h2 = h2 + c;
-        h3 = h3 + d;
-        h4 = h4 + e;
-        h5 = h5 + f;
-        h6 = h6 + g;
-        h7 = h7 + h;
-
-        it++;
-    }
-
+        h1 = h1 + b;distinct
     // Produce the final hash value (big-endian):
     string hash = "";
     hash.append(U32ToString(h0))
