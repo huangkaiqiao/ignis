@@ -137,3 +137,40 @@ inline long long mod_reverse(long long a, long long n)
 //   std::cout << mod_reverse(780ll, 17ll) << std::endl;
 //   std::cout << mod_reverse(46ll, 240ll) << std::endl;
 // }
+int extend_euclid(int a, int b, int &x, int &y) {
+  // cout << "0a:" << a << " b:" << b << " x:" << x << " y:" << y << endl;
+  if (a==0 && b==0) {
+    return -1;
+  }
+  if (b==0) {
+    x = 1;
+    y = 0;
+    return a;
+  }
+  int d = extend_euclid(b, a % b, y, x);
+  y -= a / b * x;
+  cout << "1a:" << a << " b:" << b << " x:" << x << " y:" << y << endl;
+  return d;
+}
+
+int mod_inverse(int e, int n){
+  if (e > n) {
+    int tmp = e;
+    e = n;
+    n = tmp;
+  }
+  int x, y, d = extend_euclid(n, e, x, y);
+  if (d != 1) {
+    return -1;
+  }
+  if (y < 0){
+    y = n + y; 
+  }
+  return y;
+} 
+
+// int main() {
+//   int mmi = mod_inverse(17, 780);
+//   cout << "modular multiplicative inverse:" << mmi << endl;
+//   return (0);
+// }

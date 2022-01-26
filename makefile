@@ -20,5 +20,5 @@ test:
 	./build/test.o
 
 tmp:
-	$(CXX) src/math/mod.cc -o build/tmp.o $(CPPFLAGS) $(CXXFLAGS)
+	$(CXX) src/tmp.cc -o build/tmp.o $(CPPFLAGS) $(CXXFLAGS)
 	./build/tmp.o
