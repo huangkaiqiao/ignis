@@ -1,7 +1,8 @@
 CC = clang
-CXX = clang++# Flag for implicit rules
+CXX = clang++ # Flag for implicit rules
 CFLAGS = -g
-CXXFLAGS = -I ./include
+# CPPFLAGS = -I./include -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -stdlib=libc++
+CPPFLAGS = -I./include -stdlib=libc++
 
 clean:
 	rm -f ./build/*.o

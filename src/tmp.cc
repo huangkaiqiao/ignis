@@ -1,5 +1,20 @@
+/**
+ * @file tmp.cc
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-02-08
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ * 大数操作类，默认十六进制
+ */
+
 #include <iostream>
 #include <cstring>
+#include <string_view>
+#include <sstream>
+#include <string>
 
 // #include "BigInt.hpp"
 void load_levels_example();
@@ -11,71 +26,150 @@ using namespace std;
 void load_levels_example()
 {
     spdlog::cfg::load_env_levels();
+    // spdlog::set_pattern("*** [%Y-%m-%d %H:%M:%S %e %z] [thread %t] %v ***");
+    spdlog::set_pattern("*** %+ ***");
 }
+
+typedef unsigned char byte;  // 0~255
+typedef const char* String;
+typedef unsigned long int u64;
+
 /**
  * 32 字节的数字包装类 
  */
 class Num
 {
   private:
-    unsigned char _bytes[32];
-    int length;
+    byte _value[32]; // 十六进制字符串
+    int _length;
   public:
     Num(const char *str);
-    char* getBytes( void );
-
+    byte* getBytes( void );
+    string getDecimalString( void );
+    void decStrToBytes(const char *str, byte *target);
+    byte hexToDecimal(byte *ptr);
+    void copy(byte *target, byte *source);
 };
 
 /**
  * 构造函数， 参数是如同 "0xFF" 的十六进制字符串
  */
-Num::Num(const char* str){
+Num::Num(const char *_str){
+  string str = _str;
+  bool isDecimal = false;
+  bool isHexadecimal = false;
   // 判断参数
-  if (str.rfind("0x", 0) != 0){
-    throw "Illegal arguement";
+  if (str.rfind("0x", 0) == 0){
+    // throw "Illegal arguement";
+    isHexadecimal = true;
+  } else {
+    spdlog::warn("use recommand input like 0xFF...");
+    isDecimal = true;    
   }
+  // 1.输入十六进制的情况
   // 两位两位截取
   // 赋值给 _bytes
-  int len = strlen(str);
-  len += len % 2;
-  for (int i=len-1, j=0; i>0; i-=2, j++){
-    int dec = this.hexToDecimal(str+i)
-  } 
-  _bytes = (char *)bytes;
-  // _bytes = const_cast<unsigned char *>(bytes);
-  length = strlen(_bytes);
+  int len = str.length();
+  if (isHexadecimal) {
+    len += len % 2;
+    for (int i=len-2, j=0; i>0; i-=2, j++){
+      byte dec = this->hexToDecimal((byte *)&str.at(i));
+    }
+  }
+
+  // 2.输入十进制的情况
+  if (isDecimal) {
+    byte value[32] = {};
+    this->decStrToBytes(_str, value);
+    this->copy(this->_value, value);
+    // _bytes = const_cast<unsigned char *>(bytes);
+    // length = strlen(_bytes);
+  }
+  _length = len;
 }
 
-unsigned char Num::hexToDecimal(char* ptr){
-  char c0 = *ptr;
-  char c1 = *(ptr+1);
-  int dec = 0;
-  if ('0' <= c2 && c2 <= '9') {
-    dec += c2 - '0';
-  } else if ('A' <= c2 && c2 <= 'Z') {
-    dec += c2 - 'A';
-  } else if ('a' <= c2 && c2 <= 'z')
+void Num::copy(byte* target, byte* source){
+  for(byte i=0; i<32; i++){
+    *(target+i) = *(source+i);
+  }
 }
 
-char* Num::getBytes( void )
+// byte *Num::decStrToBytes(const char *decStr){
+void Num::decStrToBytes(const char *decStr, byte *target){
+  // byte value[32] = {};
+  u64 n = 0ll;
+  byte len = strlen(decStr);
+  for(byte i=0; i<len; i++){
+    n *= 10;
+    n += *(decStr+i) - '0';
+    // SPDLOG_INFO("decStrToBytes n:{}", n);
+  }
+  byte i=0;
+  while(n>0){
+    // SPDLOG_INFO("n:{}", n);
+    target[i++] = n & 0xff;
+    n = n >> 8;
+  }
+  // return value;
+} 
+
+byte Num::hexToDecimal(byte* ptr){
+  // SPDLOG_INFO("byte:{:c}{:c}", *ptr, *(ptr+1));
+  byte dec = 0;
+  for(byte i=0; i<2; i++){
+    byte c = *(ptr+i);
+    // char c1 = *(ptr+1);
+    if ('0' <= c && c <= '9') {
+      dec += c - '0';
+    } else if ('A' <= c && c <= 'Z') {
+      dec += c - 'A' + 0xa;
+    } else if ('a' <= c && c <= 'z') {
+      dec += c - 'a' + 0xa;
+    }
+    dec *= 0xf - i*0xe;
+    // SPDLOG_INFO("hexToDecimal: {:X}", dec);
+  }
+  // SPDLOG_INFO("hexToDecimal: {:X}", dec);
+  return dec;
+}
+
+byte* Num::getBytes( void )
 {
-  return _bytes;
+  return _value;
 }
 
-template <> struct fmt::formatter<Int>: formatter<string_view> {
+string Num::getDecimalString( void )
+{
+  // string s = "";
+  int i = 32;
+  while(_value[--i]==0){}
+  u64 tmp = 0;
+  for(; i>=0; i--){
+    // SPDLOG_INFO("value.{}: {}, tmp:{}", i, _value[i], tmp);
+    // s = s + (char)((_value[i] >> 4) + '0') + (char)((_value[i] & 0x0f + '0'));
+    tmp <<= 8;
+    tmp |= _value[i];
+  }
+  ostringstream s;
+  s << tmp;
+  return s.str();
+}
+
+template <> struct fmt::formatter<Num>: formatter<string> {
   // parse is inherited from formatter<string_view>.
   template <typename FormatContext>
-  auto format(Int a, FormatContext& ctx) {
-    string_view name = a.getBytes();
+  auto format(Num a, FormatContext& ctx) {
+    // string message = reinterpret_cast<char *>(a.getBytes());
     // string_view name = "not found";
-    return formatter<string_view>::format(name, ctx);
+    string message = a.getDecimalString();
+    return formatter<string>::format(message, ctx);
   }
 };
 
 
 int main() {
   load_levels_example();
-  Int a = Int("9876543210");
+  Num a = Num("9876543210");
   spdlog::info("a: {}", a);
   return 0;
 }
