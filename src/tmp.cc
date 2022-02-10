@@ -11,6 +11,7 @@
  */
 
 #include <iostream>
+// #include <algorithm>
 #include <cstring>
 #include <string_view>
 #include <sstream>
@@ -44,11 +45,14 @@ class Num
     int _length;
   public:
     Num(const char *str);
+    void copy(byte *target, byte *source);
+    void decStrToBytes(const char *str, byte *target);
     byte* getBytes( void );
     string getDecimalString( void );
-    void decStrToBytes(const char *str, byte *target);
     byte hexToDecimal(byte *ptr);
-    void copy(byte *target, byte *source);
+    byte length( void );
+    // Num operator+(const Num& n);
+    Num operator+(Num& n);
 };
 
 /**
@@ -155,6 +159,11 @@ string Num::getDecimalString( void )
   return s.str();
 }
 
+// Num operator+(Num& n){
+//   // Num num;
+//   byte length = max(this.length(), n.length());
+// }
+
 template <> struct fmt::formatter<Num>: formatter<string> {
   // parse is inherited from formatter<string_view>.
   template <typename FormatContext>
@@ -166,10 +175,43 @@ template <> struct fmt::formatter<Num>: formatter<string> {
   }
 };
 
+const byte max(byte a, byte b)
+{
+  return (a<b) ? b : a;
+}
+
+byte Num::length( void ){
+  return _length;
+}
+
+Num Num::operator+(Num& n){
+      // Num num;
+      byte length = max(this->length(), n.length());
+      byte carry = 0;
+      byte *val0 = this->getBytes();
+      byte *val1 = n.getBytes();
+      Num sum = Num("0");
+      byte *value = sum.getBytes();
+      for(int i=0; i<length; i++){
+        byte a = *(val0+i);
+        byte b = *(val1+i);
+        byte byte_sum = a + b;
+        *(value+i) = byte_sum + carry;
+        carry = byte_sum < a || byte_sum < b;
+      }
+      if(carry == 1) {
+        SPDLOG_INFO("digits overflow");
+      }
+      return sum;
+    }
 
 int main() {
   load_levels_example();
   Num a = Num("9876543210");
   spdlog::info("a: {}", a);
+  Num b = Num("0123456789");
+  spdlog::info("b: {}", b);
+  Num c = a + b;
+  spdlog::info("sum: {}", a + b);
   return 0;
 }
