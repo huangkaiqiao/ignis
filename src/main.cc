@@ -6,7 +6,7 @@ void load_levels_example();
 #include "spdlog/spdlog.h"
 #include "spdlog/cfg/env.h" // support for loading levels from the environment variable
 
-#include "rsa.h"
+#include "crypt/rsa.h"
 
 int main()
 {

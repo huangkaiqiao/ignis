@@ -41,7 +41,7 @@ typedef unsigned long int u64;
 class Num
 {
   private:
-    byte _value[32]; // 十六进制字符串
+    byte _value[512]; // 十六进制字符串
     int _length;
   public:
     Num(const char *str);
@@ -53,6 +53,13 @@ class Num
     byte length( void );
     // Num operator+(const Num& n);
     Num operator+(Num& n);
+    Num operator-(Num& n);
+    Num operator*(Num& n);
+    Num operator/(Num& n);
+    Num operator%(Num& n);
+    bool operator>(Num& n);
+    bool operator<(Num& n);
+    bool operator=(Num& n);
 };
 
 /**
@@ -185,25 +192,58 @@ byte Num::length( void ){
 }
 
 Num Num::operator+(Num& n){
-      // Num num;
-      byte length = max(this->length(), n.length());
-      byte carry = 0;
-      byte *val0 = this->getBytes();
-      byte *val1 = n.getBytes();
-      Num sum = Num("0");
-      byte *value = sum.getBytes();
-      for(int i=0; i<length; i++){
-        byte a = *(val0+i);
-        byte b = *(val1+i);
-        byte byte_sum = a + b;
-        *(value+i) = byte_sum + carry;
-        carry = byte_sum < a || byte_sum < b;
-      }
-      if(carry == 1) {
-        SPDLOG_INFO("digits overflow");
-      }
-      return sum;
-    }
+  // Num num;
+  byte length = max(this->length(), n.length());
+  byte carry = 0;
+  byte *val0 = this->getBytes();
+  byte *val1 = n.getBytes();
+  Num sum = Num("0");
+  byte *value = sum.getBytes();
+  for(int i=0; i<length; i++){
+    byte a = *(val0+i);
+    byte b = *(val1+i);
+    byte byte_sum = a + b;
+    *(value+i) = byte_sum + carry;
+    carry = byte_sum < a || byte_sum < b;
+  }
+  if(carry == 1) {
+    spdlog::info("digits overflow");
+  }
+  return sum;
+}
+
+Num Num::operator-(Num& n){
+  byte *val0 = this->getBytes();
+  byte *val1 = n.getBytes();
+  byte length = max(this->length(), n.length());
+  byte borrow = 0;
+  Num sub = Num("0");
+  byte *value = sub.getBytes();
+  for(int i=0; i<length; i++){
+    byte a = *(val0+i);
+    byte b = *(val1+i);
+    byte byte_sub = a - b;
+    *(value+i) = byte_sub - borrow;
+    borrow = b > a;
+  }
+  if(borrow == 1) {
+    spdlog::info("negative number not allowed");
+  }
+  return sub;
+}
+
+Num Num::operator*(Num& n){
+  Num mul = Num("0");
+
+}
+
+bool Num::operator>(Num& n){
+  byte len0 = this->length();
+  byte len1 = n.length();
+  if (len0 != len1) {
+    return len0 > len1;
+  }
+}
 
 int main() {
   load_levels_example();
@@ -213,5 +253,9 @@ int main() {
   spdlog::info("b: {}", b);
   Num c = a + b;
   spdlog::info("sum: {}", a + b);
+  spdlog::info("subtract: {}", a - b);
+  Num m = Num("10");
+  spdlog::info("a x 10: {}", a*m);
+  spdlog::info("b x 10: {}", b*m);
   return 0;
 }
