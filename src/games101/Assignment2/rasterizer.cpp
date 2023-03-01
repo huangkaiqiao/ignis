@@ -58,7 +58,7 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     // return ;
 }*/
 //判断测试点是否在三角形内
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+/*static bool insideTriangle(int x, int y, const Vector3f* _v)
 {
 	// TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
 
@@ -97,8 +97,21 @@ static bool insideTriangle(int x, int y, const Vector3f* _v)
 	{
 		return false;
 	}
-}
+}*/
+static float insideTriangle(float x, float y, const Vector3f* _v)
+{   
+    // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
+    std::vector<Vector3f> ver, ver2;
+    ver.push_back({_v[1].x()-_v[0].x(),_v[1].y()-_v[0].y(),0}); ver2.push_back({x-_v[0].x(),y-_v[0].y(),0});    
+    ver.push_back({_v[2].x()-_v[1].x(),_v[2].y()-_v[1].y(),0}); ver2.push_back({x-_v[1].x(),y-_v[1].y(),0});
+    ver.push_back({_v[0].x()-_v[2].x(),_v[0].y()-_v[2].y(),0}); ver2.push_back({x-_v[2].x(),y-_v[2].y(),0});
 
+    for(int i=0;i<3;i++){
+        if(ver[i].cross(ver2[i]).z() < 0)
+            return false;
+    }
+    return true;
+}
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
 {

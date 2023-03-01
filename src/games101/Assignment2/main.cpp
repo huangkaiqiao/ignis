@@ -57,16 +57,41 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 {
     Eigen::Matrix4f projection;
     // Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-    float t = tan(eye_fov/180*MY_PI)*abs(zNear);
-    float r = aspect_ratio*t;
+    // float t = tan(eye_fov/180*MY_PI)*abs(zNear);
+    float h = tan(eye_fov/2)*abs(zNear);
+    float w = aspect_ratio*h;
     Eigen::Matrix4f persp;
-    persp << zNear/r, 0, 0, 0,
-             0, zNear/t, 0, 0,
+    persp << -2*zNear/w, 0, 0, 0,
+             0, -2*zNear/h, 0, 0,
              0, 0, (zFar+zNear)/(zFar-zNear), 2*zFar*zNear/(zFar-zNear), 
-             0, 0, -1, 0;
+             0, 0, 1, 0;
     projection = persp * projection;
     return projection;
 }
+/*Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
+{
+    // TODO: Copy-paste your implementation from the previous assignment.
+    Eigen::Matrix4f projection;
+
+    Eigen::Matrix4f proj, ortho;
+    proj << zNear, 0, 0, 0,
+            0, zNear, 0, 0,
+            0, 0, zNear + zFar, -zNear * zFar,
+            0, 0, 1, 0;//透视投影矩阵
+
+    double w, h, z;
+    h = zNear * tan(eye_fov / 2);
+    w = h * aspect_ratio;
+    z = zFar - zNear;
+
+    ortho << 2 / w, 0, 0, 0,
+             0, 2 / h, 0, 0,
+             0, 0, 2 / z, - (zFar + zNear) / 2,
+             0, 0, 0, 1;//正交投影矩阵
+    projection = ortho * proj * projection;
+
+    return projection;
+}*/
 
 int main(int argc, const char** argv)
 {
