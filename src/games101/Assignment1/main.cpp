@@ -29,8 +29,10 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     // Then return it.
     Eigen::Matrix4f rotate;
     float radian = rotation_angle/180*MY_PI;
-    rotate << cos(radian), -sin(radian), 0, 0, sin(radian), cos(radian), 0, 0,
-        0, 0, 1, 0, 0, 0, 0, 1;
+    rotate << cos(radian), -sin(radian), 0, 0,
+              sin(radian), cos(radian), 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1;
 
     
     model = rotate * model;
@@ -50,15 +52,17 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 
     float t = tan(eye_fov/180*MY_PI)*abs(zNear);
     float r = aspect_ratio*t;
-    Eigen::Matrix4f ortho_translate;
-    ortho_translate << 1, 0, 0, -r, 0, 1, 0, -t, 0, 0, 1, (zFar-zNear)/2, 0, 0, 0, 1;
-    Eigen::Matrix4f ortho_scale;
-    ortho_scale << 1/r, 0, 0, 0, 0, 1/t, 0, 0, 0, 0, 2/(zNear-zFar), 0, 0, 0, 0, 1; 
-    Eigen::Matrix4f ortho = ortho_scale * ortho_translate;
-    Eigen::Matrix4f persp_to_ortho;
-    persp_to_ortho << zNear, 0, 0, 0, 0, zNear, 0, 0, 0, 0, zNear+zFar, -zNear*zFar, 0, 0, 1, 0;
-    Eigen::Matrix4f persp = ortho*persp_to_ortho;
-    projection = persp_to_ortho * projection;
+    // Eigen::Matrix4f ortho_translate;
+    // ortho_translate << 1, 0, 0, -r, 0, 1, 0, -t, 0, 0, 1, (zFar-zNear)/2, 0, 0, 0, 1;
+    // Eigen::Matrix4f ortho_scale;
+    // ortho_scale << 1/r, 0, 0, 0, 0, 1/t, 0, 0, 0, 0, 2/(zNear-zFar), 0, 0, 0, 0, 1; 
+    // Eigen::Matrix4f ortho = ortho_scale * ortho_translate;
+    // Eigen::Matrix4f persp_to_ortho;
+    // persp_to_ortho << zNear, 0, 0, 0, 0, zNear, 0, 0, 0, 0, zNear+zFar, -zNear*zFar, 0, 0, 1, 0;
+    // Eigen::Matrix4f persp = ortho*persp_to_ortho;
+    Eigen::Matrix4f persp;
+    persp << zNear/r, 0, 0, 0,  0, zNear/t, 0, 0,  0, 0, (zFar+zNear)/(zFar-zNear), 2*zFar*zNear/(zFar-zNear), 0, 0, -1, 0;
+    projection = persp * projection;
     return projection;
 }
 
@@ -83,6 +87,7 @@ int main(int argc, const char** argv)
     Eigen::Vector3f eye_pos = {0, 0, 5};
 
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
+    // std::vector<Eigen::Vector3f> pos{{4, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
 
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
 
@@ -98,6 +103,7 @@ int main(int argc, const char** argv)
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
+        // r.set_projection(get_projection_matrix(45, 1, -0.1, -50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
@@ -125,10 +131,10 @@ int main(int argc, const char** argv)
         std::cout << "frame count: " << frame_count++ << '\n';
 
         if (key == 'a') {
-            angle += 10;
+            angle += 15;
         }
         else if (key == 'd') {
-            angle -= 10;
+            angle -= 15;
         }
     }
 
