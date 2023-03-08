@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -50,7 +51,20 @@ Eigen::Matrix4f get_model_matrix(float angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     // TODO: Use the same projection matrix from the previous assignments
-
+    Eigen::Matrix4f projection;
+    float h = tan(eye_fov/2)*abs(zNear);
+    float w = aspect_ratio*h;
+    Eigen::Matrix4f persp;
+    // persp << -2*zNear/w, 0, 0, 0,
+    //          0, -2*zNear/h, 0, 0,
+    //          0, 0, (zFar+zNear)/(zFar-zNear), 2*zFar*zNear/(zFar-zNear), 
+    //          0, 0, 1, 0;
+    persp << 2*zNear/w, 0, 0, 0,
+             0, 2*zNear/h, 0, 0,
+             0, 0, (zFar+zNear)/(zNear-zFar), 2*zFar*zNear/(zNear-zFar), 
+             0, 0, -1, 0;
+    projection = persp * projection;
+    return projection;
 }
 
 Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
@@ -58,9 +72,13 @@ Eigen::Vector3f vertex_shader(const vertex_shader_payload& payload)
     return payload.position;
 }
 
+/**
+ * 此处用法线向量对图片进行染色 
+ */
 Eigen::Vector3f normal_fragment_shader(const fragment_shader_payload& payload)
 {
     Eigen::Vector3f return_color = (payload.normal.head<3>().normalized() + Eigen::Vector3f(1.0f, 1.0f, 1.0f)) / 2.f;
+    // printf("%f %f\t", return_color.x(), payload.color.x());
     Eigen::Vector3f result;
     result << return_color.x() * 255, return_color.y() * 255, return_color.z() * 255;
     return result;
@@ -140,9 +158,20 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f result_color = {0, 0, 0};
     for (auto& light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
+        // For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+        Vector3f light_dir = light.position - point;  // 光照方向
+        Vector3f view_dir = (eye_pos - point).normalized(); // 视线方向
+        float r2 = pow(light_dir.norm(), 2.f);  // 点与光源距离
+        light_dir.normalize();  // 光照向量归一化 Tips: 如果在未归一的情况下计算半程向量，会影响到高光
+        Vector3f half_vec = (light_dir + view_dir).normalized();  // 半程向量
+
+        auto intensity = light.intensity / r2;  // 光照强度(与距离的平方成反比)
+        Vector3f ambient = ka.cwiseProduct(amb_light_intensity);   // 环境光
+        Vector3f diffuse = kd.cwiseProduct(intensity)* std::max(0.f, normal.dot(light_dir));  // 漫反射
+        Vector3f specular = ks.cwiseProduct(intensity) * pow(std::max(0.f, normal.dot(half_vec)), p);  // 高光
+        result_color += ambient + diffuse + specular;  // 光照累积
+
     }
 
     return result_color * 255.f;
