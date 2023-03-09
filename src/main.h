@@ -2,7 +2,8 @@
 #include <string>
 #include <stdarg.h>
 #include <stdint.h>
-#include "spdlog/spdlog.h"
+// #include "spdlog/spdlog.h"
+#include "test.h"
 
 using std::hex;
 using std::string;
