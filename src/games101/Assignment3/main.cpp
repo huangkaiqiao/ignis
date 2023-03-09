@@ -102,7 +102,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     if (payload.texture)
     {
         // TODO: Get the texture value at the texture coordinates of the current fragment
-
+	return_color = payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]);
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
@@ -128,8 +128,20 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
 
     for (auto& light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
+        // For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+	Vector3f light_dir = light.position - point;  // 光照方向
+        Vector3f view_dir = (eye_pos - point).normalized(); // 视线方向
+        float r2 = pow(light_dir.norm(), 2.f);  // 点与光源距离
+        light_dir.normalize();  // 光照向量归一化 Tips: 如果在未归一的情况下计算半程向量，会影响到高光
+        Vector3f half_vec = (light_dir + view_dir).normalized();  // 半程向量
+
+        auto intensity = light.intensity / r2;  // 光照强度(与距离的平方成反比)
+        Vector3f ambient = ka.cwiseProduct(amb_light_intensity);   // 环境光
+        Vector3f diffuse = kd.cwiseProduct(intensity)* std::max(0.f, normal.dot(light_dir));  // 漫反射
+        Vector3f specular = ks.cwiseProduct(intensity) * pow(std::max(0.f, normal.dot(half_vec)), p);  // 高光
+        result_color += ambient + diffuse + specular;  // 光照累积
+
 
     }
 
@@ -201,28 +213,45 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
 
     float kh = 0.2, kn = 0.1;
     
-    // TODO: Implement displacement mapping here
-    // Let n = normal = (x, y, z)
-    // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
-    // Vector b = n cross product t
-    // Matrix TBN = [t b n]
-    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
-    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
-    // Vector ln = (-dU, -dV, 1)
-    // Position p = p + kn * n * h(u,v)
-    // Normal n = normalize(TBN * ln)
-
+    // Implement displacement mapping here
+    Vector3f n = normal;
+    float x = n.x(), y = n.y(), z = n.z();
+    Vector3f t = {x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z)};
+    Vector3f b = n.cross(t);
+    Matrix3f TBN;
+    TBN << 
+	    t.x(), b.x(), n.x(),
+	    t.y(), b.y(), n.y(),
+	    t.z(), b.z(), n.z();
+    Texture* const hmap = payload.texture;
+    float u = payload.tex_coords.x(), v = payload.tex_coords.y();
+    int w = hmap->width;
+    int h = hmap->height;
+    float dU = kh * kn * (hmap->getColor(u+1.f/w,v).norm() - hmap->getColor(u,v).norm());
+    float dV = kh * kn * (hmap->getColor(u,v+1.f/h).norm() - hmap->getColor(u,v).norm());
+    Vector3f ln = {-dU, -dV, 1.f};
+    n = (TBN * ln).normalized();
+    point += kn * n * hmap->getColor(u,v).norm();
 
     Eigen::Vector3f result_color = {0, 0, 0};
-
     for (auto& light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
+        // For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
+        Vector3f light_dir = light.position - point;  // 光照方向
+        Vector3f view_dir = (eye_pos - point).normalized(); // 视线方向
+        float r2 = pow(light_dir.norm(), 2.f);  // 点与光源距离
+        light_dir.normalize();  // 光照向量归一化 Tips: 如果在未归一的情况下计算半程向量，会影响到高光
+        Vector3f half_vec = (light_dir + view_dir).normalized();  // 半程向量
 
+        auto intensity = light.intensity / r2;  // 光照强度(与距离的平方成反比)
+        Vector3f ambient = ka.cwiseProduct(amb_light_intensity);   // 环境光
+        Vector3f diffuse = kd.cwiseProduct(intensity)* std::max(0.f, normal.dot(light_dir));  // 漫反射
+        Vector3f specular = ks.cwiseProduct(intensity) * pow(std::max(0.f, normal.dot(half_vec)), p);  // 高光
+        result_color += ambient + diffuse + specular;  // 光照累积
 
     }
-
+    
     return result_color * 255.f;
 }
 
@@ -250,19 +279,31 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)
 
     float kh = 0.2, kn = 0.1;
 
-    // TODO: Implement bump mapping here
-    // Let n = normal = (x, y, z)
-    // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
-    // Vector b = n cross product t
-    // Matrix TBN = [t b n]
-    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
-    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
-    // Vector ln = (-dU, -dV, 1)
-    // Normal n = normalize(TBN * ln)
+    // Implement bump mapping here
+    Vector3f n = normal;
+    auto x = n.x(), y = n.y(), z = n.z();
+    Vector3f t = {x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z)};
+    Vector3f b = n.cross(t);
+    Matrix3f TBN; 
+    TBN << 
+	    t.x(), b.x(), n.x(),
+	    t.y(), b.y(), n.y(),
+	    t.z(), b.z(), n.z();
+    //auto u = point.x(), v = point.y();
+    auto u = payload.tex_coords.x(), v = payload.tex_coords.y();
+    int w = payload.texture->width;
+    int h = payload.texture->height;
+    auto hmap = payload.texture;
+    //printf("%f %f\t", u, v);
+    float dU = kh * kn * (hmap->getColor(u+1.f/w,v).norm()-hmap->getColor(u,v).norm());
+    float dV = kh * kn * (hmap->getColor(u,v+1.f/h).norm()-hmap->getColor(u,v).norm());
+    Vector3f ln = {-dU, -dV, 1.f};
+    //point += (kn * normal * payload.texture->getColor(u, v).norm());
+    normal = (TBN * ln).normalized();
 
-
-    Eigen::Vector3f result_color = {0, 0, 0};
-    result_color = normal;
+    Eigen::Vector3f result_color = {0.f, 0.f, 0.f};
+    //result_color = normal;
+    result_color = normal.normalized();
 
     return result_color * 255.f;
 }
@@ -331,7 +372,7 @@ int main(int argc, const char** argv)
         }
         else if (argc == 3 && std::string(argv[2]) == "displacement")
         {
-            std::cout << "Rasterizing using the bump shader\n";
+            std::cout << "Rasterizing using the displacement shader\n";
             active_shader = displacement_fragment_shader;
         }
     }
@@ -372,11 +413,11 @@ int main(int argc, const char** argv)
         //r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
         r.draw(TriangleList);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
-        image.convertTo(image, CV_8UC3, 1.0f);
-        cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+	image.convertTo(image, CV_8UC3, 1.0f);
+	cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 
-        cv::imshow("image", image);
-        cv::imwrite(filename, image);
+	cv::imshow("image", image);
+	cv::imwrite(filename, image);
         key = cv::waitKey(10);
 
         if (key == 'a' )
