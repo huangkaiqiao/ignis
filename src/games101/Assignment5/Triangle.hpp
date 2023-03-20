@@ -11,7 +11,80 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f
     // that's specified bt v0, v1 and v2 intersects with the ray (whose
     // origin is *orig* and direction is *dir*)
     // Also don't forget to update tnear, u and v.
-    return false;
+
+    // Moller-Trumbore
+    // Check if the ray is parallel to the triangle
+    // Vector3f N = normalize(crossProduct(v0, v1));
+    // float prod = dotProduct(dir, N);
+    // if(prod == 0) {
+    //     return false;
+    // }
+
+    // Check if the ray-plane intersection lies outside the triangle
+    /*Vector3f O_v0 = orig - v0;
+    Vector3f v1_0 = v1 - v0;
+    Vector3f v2_1 = v2 - v1;
+    Vector3f matrix[3] = {
+        {-dir.x, v1_0.x, v2_1.x},
+        {-dir.y, v1_0.y, v2_1.y},
+        {-dir.z, v1_0.z, v2_1.z},
+    };
+    Vector3f inverse[3];
+    for(int i=0; i<3; i++){
+        int j = (i+1)%3;
+        int k = (i+2)%3;
+        float x = matrix[j].y * matrix[k].z - matrix[j].z * matrix[k].y;
+        float y = matrix[j].z * matrix[k].x - matrix[j].x * matrix[k].z;
+        float z = matrix[j].x * matrix[k].y - matrix[j].y * matrix[k].x;
+        inverse[i] = Vector3f(x, y, z);
+    }
+    float det = dotProduct(inverse[0], -dir);
+    for(int i=0; i<3; i++){
+        inverse[i] = inverse[i]/det;
+    }
+    tnear = dotProduct(inverse[0], O_v0);
+    u     = dotProduct(inverse[1], O_v0);
+    v     = dotProduct(inverse[2], O_v0);
+    Vector3f P = (1-u-v)*v0 + u*v1 + v*v2;
+    if(dotProduct(P-v0, v1_0)>0 && dotProduct(P-v1, v2_1)>0 && dotProduct(P-v2, v0-v2)>0){
+        return true;
+    }
+    return false;*/
+
+
+    const float EPSILON = 0.0000001;
+    Vector3f vertex0 = v0;
+    Vector3f vertex1 = v1;  
+    Vector3f vertex2 = v2;
+    Vector3f edge1, edge2, h, s, q;
+    Vector3f rayVector = dir;
+    Vector3f rayOrigin = orig;
+    // float a,f,u,v;
+    float a,f;
+    edge1 = vertex1 - vertex0;
+    edge2 = vertex2 - vertex0;
+    h = crossProduct(rayVector, edge2);
+    a = dotProduct(edge1, h);
+    if (a > -EPSILON && a < EPSILON)
+        return false;    // This ray is parallel to this triangle.
+    f = 1.0/a;
+    s = rayOrigin - vertex0;
+    u = f * dotProduct(s, h);
+    if (u < 0.0 || u > 1.0)
+        return false;
+    q = crossProduct(s, edge1);
+    v = f * dotProduct(rayVector, q);
+    if (v < 0.0 || u + v > 1.0)
+        return false;
+    // At this stage we can compute t to find out where the intersection point is on the line.
+    tnear = f * dotProduct(edge2, q);
+    if (tnear > EPSILON) // ray intersection
+    {
+        // outIntersectionPoint = rayOrigin + rayVector * t;
+        return true;
+    }
+    else // This means that there is a line intersection but not a ray intersection.
+        return false;
 }
 
 class MeshTriangle : public Object
