@@ -7,52 +7,50 @@
 bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f& v2, const Vector3f& orig,
                           const Vector3f& dir, float& tnear, float& u, float& v)
 {
-    // TODO: Implement this function that tests whether the triangle
+    // Implement this function that tests whether the triangle
     // that's specified bt v0, v1 and v2 intersects with the ray (whose
     // origin is *orig* and direction is *dir*)
     // Also don't forget to update tnear, u and v.
 
     // Moller-Trumbore
     // Check if the ray is parallel to the triangle
-    // Vector3f N = normalize(crossProduct(v0, v1));
-    // float prod = dotProduct(dir, N);
-    // if(prod == 0) {
-    //     return false;
-    // }
+     const float EPSILON = 0.0000001;
+    Vector3f N = normalize(crossProduct(v0, v1));
+    float prod = dotProduct(dir, N);
+    if(prod == 0) {
+        return false;
+    }
 
     // Check if the ray-plane intersection lies outside the triangle
-    /*Vector3f O_v0 = orig - v0;
+    Vector3f O_v0 = orig - v0;
     Vector3f v1_0 = v1 - v0;
-    Vector3f v2_1 = v2 - v1;
+    Vector3f v2_1 = v2 - v0;  // Tips③ get the correct edge2(v0→v2)
     Vector3f matrix[3] = {
         {-dir.x, v1_0.x, v2_1.x},
         {-dir.y, v1_0.y, v2_1.y},
         {-dir.z, v1_0.z, v2_1.z},
     };
-    Vector3f inverse[3];
-    for(int i=0; i<3; i++){
-        int j = (i+1)%3;
-        int k = (i+2)%3;
-        float x = matrix[j].y * matrix[k].z - matrix[j].z * matrix[k].y;
-        float y = matrix[j].z * matrix[k].x - matrix[j].x * matrix[k].z;
-        float z = matrix[j].x * matrix[k].y - matrix[j].y * matrix[k].x;
-        inverse[i] = Vector3f(x, y, z);
+    Vector3f inverse[3] = {Vector3f(), Vector3f(), Vector3f()};
+    inv_mat(matrix, inverse);  // Tips① calculate matrix inverse
+    u     = dotProduct(inverse[1], O_v0);  // Tips② consider point is in triangle or not
+    if(u < 0.f || u > 1.f) {
+        return false;
     }
-    float det = dotProduct(inverse[0], -dir);
-    for(int i=0; i<3; i++){
-        inverse[i] = inverse[i]/det;
+    v     = dotProduct(inverse[2], O_v0);
+    if(v < 0.f || u+v > 1.f) {
+        return false;
     }
     tnear = dotProduct(inverse[0], O_v0);
-    u     = dotProduct(inverse[1], O_v0);
-    v     = dotProduct(inverse[2], O_v0);
-    Vector3f P = (1-u-v)*v0 + u*v1 + v*v2;
-    if(dotProduct(P-v0, v1_0)>0 && dotProduct(P-v1, v2_1)>0 && dotProduct(P-v2, v0-v2)>0){
+    if (tnear > EPSILON) {
         return true;
     }
-    return false;*/
+    // Vector3f P = (1-u-v)*v0 + u*v1 + v*v2;
+    // Vector3f P = v0 + u*(v1-v0) + v*(v2-v0);
+
+    return false;
 
 
-    const float EPSILON = 0.0000001;
+    /**const float EPSILON = 0.0000001;
     Vector3f vertex0 = v0;
     Vector3f vertex1 = v1;  
     Vector3f vertex2 = v2;
@@ -84,7 +82,33 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f
         return true;
     }
     else // This means that there is a line intersection but not a ray intersection.
+        return false; */
+
+    /*const float EPSILON = 0.0000001;
+    Vector3f S = orig - v0;
+    Vector3f E1 = v1 - v0;
+    // Vector3f E2 = v2 - v1;  // 这里的边选错了
+    Vector3f E2 = v2 - v0;
+    Vector3f S1 = crossProduct(dir, E2);
+    Vector3f S2 = crossProduct(S, E1);
+    float a = dotProduct(S1, E1);
+    if(-EPSILON < a && a < EPSILON) {
         return false;
+    }
+    float f = 1.0/a;
+    u = dotProduct(S1, S)*f;
+    if(u < 0.0|| u > 1.0) {
+        return false;
+    }
+    v = dotProduct(dir, S2)*f;
+    if(v < 0.0|| u+v > 1.0) {
+        return false;
+    }
+    tnear = dotProduct(S2, E2)*f;
+    if(tnear>EPSILON){
+        return true;
+    }
+    return false;*/
 }
 
 class MeshTriangle : public Object

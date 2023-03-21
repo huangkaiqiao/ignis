@@ -114,3 +114,25 @@ inline Vector3f crossProduct(const Vector3f& a, const Vector3f& b)
 {
     return Vector3f(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
+
+inline void inv_mat(Vector3f* matrix, Vector3f* inverse){
+    float tmp = 0.f;
+    tmp = matrix[0].y; matrix[0].y = matrix[1].x; matrix[1].x = tmp;
+    tmp = matrix[0].z; matrix[0].z = matrix[2].x; matrix[2].x = tmp;
+    tmp = matrix[1].z; matrix[1].z = matrix[2].y; matrix[2].y = tmp;
+    for(int i=0; i<3; i++){
+        int j = (i+1)%3;
+        int k = (i+2)%3;
+        float x = matrix[j].y * matrix[k].z - matrix[j].z * matrix[k].y;
+        float y = matrix[j].z * matrix[k].x - matrix[j].x * matrix[k].z;
+        float z = matrix[j].x * matrix[k].y - matrix[j].y * matrix[k].x;
+        // printf("x:%.2f, y:%.2f, z:%.2f\n", x, y, z);
+        inverse[i] = Vector3f(x, y, z);
+    }
+    // Vector3f col = Vector3f(matrix[0].x, matrix[1].x, matrix[2].x);
+    // printf("inv[0]:%.2f %.2f %.2f\n", inverse[0].x, inverse[0].y, inverse[0].z);
+    float det = dotProduct(inverse[0], matrix[0]);
+    for(int i=0; i<3; i++){
+        inverse[i] = inverse[i]/det;
+    }
+}

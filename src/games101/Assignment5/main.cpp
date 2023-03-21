@@ -37,3 +37,19 @@ int main()
 
     return 0;
 }
+
+// int main() {
+//     Vector3f matrix[3];
+//     matrix[0] = {1, 0, 3};
+//     matrix[1] = {2, 2, 1};
+//     matrix[2] = {3, 2, 3};
+//     Vector3f inverse[3];
+//     for(Vector3f v: inverse) {
+//         v = Vector3f();
+//     }
+//     inv_mat(matrix, inverse);
+//     for(Vector3f v: inverse) {
+//         printf("%.2f %.2f %.2f\n", v.x, v.y, v.z);
+//     }
+//     return 0;
+// }
