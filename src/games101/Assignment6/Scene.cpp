@@ -66,8 +66,6 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         Vector3f hitPoint = intersection.coords;
         Vector3f N = intersection.normal; // normal
         Vector2f st; // st coordinates
-        printf("castRay: %d\n", intersection.happened);
-        printf("castRay: %d\n", hitObject);
         hitObject->getSurfaceProperties(hitPoint, ray.direction, index, uv, N, st);
 //        Vector3f tmp = hitPoint;
         switch (m->getType()) {
